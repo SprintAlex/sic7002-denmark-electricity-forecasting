@@ -12,6 +12,19 @@ import pandas as pd
 from config import DMI_BASE, TZ_UTC
 
 
+def _get_retry(params, retries=4):
+    """GET avec retry exponentiel sur erreurs réseau transitoires (DNS, route)."""
+    for i in range(retries):
+        try:
+            r = requests.get(DMI_BASE, params=params, timeout=60)
+            r.raise_for_status()
+            return r
+        except requests.exceptions.RequestException:
+            if i == retries - 1:
+                raise
+            time.sleep(2 ** i)  # 1,2,4s
+
+
 def fetch_station(station_id, parameter, start, end, limit=10_000):
     """Observations horaires d'une station pour une variable."""
     params = {
@@ -23,8 +36,7 @@ def fetch_station(station_id, parameter, start, end, limit=10_000):
     }
     rows = []
     while True:
-        r = requests.get(DMI_BASE, params=params, timeout=60)
-        r.raise_for_status()
+        r = _get_retry(params)
         feats = r.json().get("features", [])
         for f in feats:
             p = f["properties"]
@@ -53,7 +65,7 @@ def fetch_zone(stations, parameter, start, end, chunk_days=30):
     df = pd.concat(frames, ignore_index=True)
     df = ensure_utc(df)
     df[parameter] = pd.to_numeric(df[parameter], errors="coerce")
-    df["timestamp_utc"] = df["timestamp_utc"].dt.floor("H")
+    df["timestamp_utc"] = df["timestamp_utc"].dt.floor("h")
     # moyenne intra-station par heure, puis moyenne entre stations
     per_station = df.groupby(["timestamp_utc", "station_id"])[parameter].mean().reset_index()
     return per_station.groupby("timestamp_utc")[parameter].mean().reset_index()

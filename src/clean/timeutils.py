@@ -27,6 +27,6 @@ def ensure_utc(df, col="timestamp_utc"):
 def build_skeleton(start=START_DATE, end=END_DATE, zones=ZONES):
     """Backbone : index horaire UTC continu × zones (produit cartésien)."""
     full = pd.date_range(start=f"{start} 00:00", end=f"{end} 23:00",
-                         freq="H", tz=TZ_UTC)
+                         freq="h", tz=TZ_UTC)
     return pd.DataFrame([(ts, z) for ts in full for z in zones],
                         columns=["timestamp_utc", "zone"])

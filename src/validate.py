@@ -26,7 +26,7 @@ def validate(df):
     for zone in ZONES:
         ts = pd.to_datetime(df.loc[df["zone"] == zone, "timestamp_utc"]).sort_values()
         gaps = ts.diff().dropna()
-        bad = gaps[gaps != pd.Timedelta("1H")]
+        bad = gaps[gaps != pd.Timedelta("1h")]
         print(f"[continuité {zone}] {len(bad)} trous horaires")
         ok &= bad.empty
 
