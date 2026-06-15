@@ -1,0 +1,18 @@
+séquences: train=34,289 val=8,736 test=8,782 | seq_len=168 feat=25
+  epoch  1  val MAE 28.78
+  epoch  2  val MAE 21.37
+  epoch  3  val MAE 21.11
+  epoch  4  val MAE 21.25
+  epoch  5  val MAE 18.81
+  epoch  6  val MAE 19.38
+  epoch  7  val MAE 20.77
+  epoch  8  val MAE 21.52
+  epoch  9  val MAE 21.67
+  epoch 10  val MAE 20.57
+  early stop
+
+=== TEST (2024 S2) — LSTM ===
+  LSTM     MAE=26.40  RMSE=42.42  DirAcc=75.1%
+  (XGBoost day-ahead : MAE 25.63  RMSE 38.80  DirAcc 72.6%)
+
+✅ figure 10_lstm_predictions.png | modèle lstm_spot.pt
