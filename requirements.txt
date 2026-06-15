@@ -6,3 +6,5 @@ tqdm
 pyarrow
 holidays
 jupyter
+matplotlib
+statsmodels
