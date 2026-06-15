@@ -24,8 +24,12 @@ CSV = PROCESSED_DIR / "denmark_electricity_dataset_2022_2024.csv"
 OUT = PROCESSED_DIR / "features.parquet"
 
 TARGETS = ["spot_price_eur", "imbalance"]
-LAGS = [1, 24, 168]
+# horizon de prévision (h) : 1 = nowcast (utilise lag1) ; 24 = day-ahead réaliste.
+# En day-ahead on ne dispose que d'infos jusqu'à H-24 -> lag min = horizon.
+HORIZON = int(__import__("os").environ.get("HORIZON", "24"))
+LAGS = [h for h in [1, 24, 168] if h >= HORIZON]
 ROLL_WINDOWS = [24, 168]
+ROLL_SHIFT = HORIZON  # la fenêtre rolling exclut tout ce qui est < H-horizon
 DK_HOLIDAYS = holidays.Denmark(years=range(2021, 2026))
 
 
@@ -52,8 +56,9 @@ def build_features(df):
             for lag in LAGS:
                 g[f"{col}_lag{lag}"] = g[col].shift(lag)
             for w in ROLL_WINDOWS:
-                # shift(1) avant rolling : la fenêtre exclut l'instant courant
-                base = g[col].shift(1)
+                # shift(horizon) avant rolling : exclut tout ce qui n'est pas
+                # disponible à l'instant de prévision (pas de fuite à l'horizon)
+                base = g[col].shift(ROLL_SHIFT)
                 g[f"{col}_rollmean{w}"] = base.rolling(w).mean()
                 g[f"{col}_rollstd{w}"] = base.rolling(w).std()
         parts.append(g)
