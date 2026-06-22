@@ -12,6 +12,11 @@ RANGES = {
     "wind_speed": (0, 50),
     "radia_glob": (0, 1500),
     "temp_dry": (-40, 45),
+    "fc_offshore_da": (0, 8000),
+    "fc_onshore_da": (0, 8000),
+    "fc_solar_da": (0, 8000),
+    "fc_wind_da": (0, 12000),
+    "fc_renew_da": (0, 15000),
 }
 
 

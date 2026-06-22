@@ -33,7 +33,8 @@ DEV = "cpu"
 
 
 class LSTMReg(nn.Module):
-    def __init__(self, n_feat, hidden=64, layers=2, dropout=0.2):
+    # archi retenue par le tuning (lstm_tune.py, sélection sur val MAE) : 128x2, dropout 0.3
+    def __init__(self, n_feat, hidden=128, layers=2, dropout=0.3):
         super().__init__()
         self.lstm = nn.LSTM(n_feat, hidden, layers, batch_first=True,
                             dropout=dropout)
@@ -87,7 +88,7 @@ def main():
 
     dl_tr, dl_va = loader(tr, True), loader(va, False)
     model = LSTMReg(len(cols)).to(DEV)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    opt = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-5)
     lossf = nn.MSELoss()
 
     best_mae, best_state, patience = np.inf, None, 0

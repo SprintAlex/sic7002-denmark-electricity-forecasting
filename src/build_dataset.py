@@ -16,6 +16,7 @@ from src.ingest.prices import fetch_prices
 from src.ingest.balance import fetch_balance
 from src.ingest.consumption import fetch_consumption
 from src.ingest.weather import fetch_weather
+from src.ingest.forecasts import fetch_forecasts
 from src.clean.merge import merge_all
 from src.clean.missing import ffill_by_zone
 from src.validate import validate
@@ -40,8 +41,9 @@ def main():
     balance = _cached("balance", fetch_balance)
     consumption = _cached("consumption", fetch_consumption)
     weather = _cached("weather", fetch_weather)
+    forecasts = _cached("forecasts", fetch_forecasts)
 
-    df = merge_all(prices, balance, consumption, weather)
+    df = merge_all(prices, balance, consumption, weather, forecasts)
     df = ffill_by_zone(df, DATA_COLS, ZONES)
 
     print("\n=== VALIDATION ===")

@@ -16,17 +16,25 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from xgboost import XGBRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from config import PROCESSED_DIR, ROOT
+from config import PROCESSED_DIR, ROOT, FORECAST_COLS
 from src.features import build_features, temporal_split
 
 TARGET = "spot_price_eur"
 FIG = ROOT / "reports" / "figures"
 
-# features = calendaire + lags/rolling (prix & imbalance passés) + drivers exogènes.
+# features = calendaire + lags/rolling (prix & imbalance passés) + drivers exogènes
+# + prévisions day-ahead éolien/solaire (connues la veille, sans fuite).
 # EXCLUS (fuite) : prix courant, imbalance/mfrr courants, gap_flags.
-EXOG = ["consumption_mwh", "wind_speed", "radia_glob", "temp_dry"]
+EXOG = ["consumption_mwh", "wind_speed", "radia_glob", "temp_dry"] + FORECAST_COLS
+
+# hyperparamètres retenus : Optuna (80 essais, CV TimeSeriesSplit) + loss pseudo-Huber.
+# cf. reports/optuna_xgb.log, src.models.xgb_experiments, src.models.xgb_forecast_exog.
+BEST_PARAMS = dict(learning_rate=0.01116, n_estimators=496, max_depth=10,
+                   subsample=0.73377, colsample_bytree=0.69384, min_child_weight=3,
+                   gamma=0.21781, reg_alpha=0.38953, reg_lambda=0.00012,
+                   objective="reg:pseudohubererror")
 
 
 def feature_cols(df):
@@ -47,9 +55,10 @@ def directional_accuracy(y_true, y_pred, ref):
 def evaluate(name, y_true, y_pred, ref):
     mae = mean_absolute_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    r2 = r2_score(y_true, y_pred)
     da = directional_accuracy(y_true.values, y_pred, ref.values)
-    print(f"  {name:18s} MAE={mae:6.2f}  RMSE={rmse:6.2f}  DirAcc={da*100:5.1f}%")
-    return mae, rmse, da
+    print(f"  {name:20s} MAE={mae:6.2f}  RMSE={rmse:6.2f}  R2={r2:5.3f}  DirAcc={da*100:5.1f}%")
+    return mae, rmse, r2, da
 
 
 def main():
@@ -63,16 +72,16 @@ def main():
     df = df.dropna(subset=cols + [TARGET]).reset_index(drop=True)
 
     tr, va, te = temporal_split(df)
-    print(f"train={len(tr):,}  val={len(va):,}  test={len(te):,}  | {len(cols)} features")
+    # entraînement sur train+val (n_estimators fixé par Optuna -> pas d'early stopping)
+    trva = pd.concat([tr, va]).sort_values("timestamp_utc")
+    print(f"train+val={len(trva):,}  test={len(te):,}  | {len(cols)} features")
 
-    Xtr, ytr = tr[cols], tr[TARGET]
+    Xtrva, ytrva = trva[cols], trva[TARGET]
     Xte, yte = te[cols], te[TARGET]
 
-    model = XGBRegressor(
-        n_estimators=600, learning_rate=0.05, max_depth=8,
-        subsample=0.8, colsample_bytree=0.8, n_jobs=-1, random_state=42,
-        early_stopping_rounds=40, eval_metric="mae")
-    model.fit(Xtr, ytr, eval_set=[(va[cols], va[TARGET])], verbose=False)
+    model = XGBRegressor(**BEST_PARAMS, tree_method="hist",
+                         n_jobs=-1, random_state=42, verbosity=0)
+    model.fit(Xtrva, ytrva)
 
     pred = model.predict(Xte)
     ref = te["spot_price_eur_lag24"]  # référence pour directional accuracy

@@ -31,9 +31,14 @@ STATIONS = {"DK1": STATIONS_DK1, "DK2": STATIONS_DK2}
 
 DMI_PARAMETERS = ["wind_speed", "radia_glob", "temp_dry"]
 
+# --- Prévisions day-ahead production (EDS Forecasts_Hour, ForecastDayAhead) ---
+# Connues la veille -> exogènes honnêtes pour le day-ahead (pas de fuite).
+FORECAST_COLS = ["fc_offshore_da", "fc_onshore_da", "fc_solar_da",
+                 "fc_wind_da", "fc_renew_da"]
+
 # --- Schéma de sortie (ordre figé) ---
 FINAL_COLS = ["timestamp_utc", "zone", "spot_price_eur", "imbalance",
               "mfrr_activated", "consumption_mwh", "wind_speed",
-              "radia_glob", "temp_dry"]
+              "radia_glob", "temp_dry"] + FORECAST_COLS
 
 DATA_COLS = FINAL_COLS[2:]  # colonnes sujettes au forward-fill / flag

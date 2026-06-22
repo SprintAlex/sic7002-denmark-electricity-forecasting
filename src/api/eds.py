@@ -36,8 +36,9 @@ def eds_fetch(dataset, start, end, columns=None, filters=None,
         payload = r.json()
         batch = payload.get("records", [])
         records.extend(batch)
-        total = payload.get("total", 0)
-        if len(records) >= total or not batch:
+        # NB: certains datasets (Forecasts_Hour) renvoient `total` = taille du
+        # batch et non le grand total → on pagine tant que la page est PLEINE.
+        if not batch or len(batch) < limit:
             break
         params["offset"] += limit
         time.sleep(pause)

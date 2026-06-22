@@ -8,3 +8,9 @@ holidays
 jupyter
 matplotlib
 statsmodels
+optuna
+joblib
+shap
+xgboost
+scikit-learn
+torch
