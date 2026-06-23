@@ -41,8 +41,10 @@ def objective(trial, X, y):
         "gamma":            trial.suggest_float("gamma", 0.0, 0.5),
         "reg_alpha":        trial.suggest_float("reg_alpha", 1e-4, 10.0, log=True),
         "reg_lambda":       trial.suggest_float("reg_lambda", 1e-4, 10.0, log=True),
+        # delta de la loss pseudo-Huber : <1 ~ L1 (MAE), grand ~ L2 (RMSE)
+        "huber_slope":      trial.suggest_float("huber_slope", 0.3, 10.0, log=True),
     }
-    m = XGBRegressor(**params, objective="reg:squarederror", tree_method="hist",
+    m = XGBRegressor(**params, objective="reg:pseudohubererror", tree_method="hist",
                      random_state=SEED, verbosity=0, n_jobs=-1)
     tscv = TimeSeriesSplit(n_splits=3)
     sc = cross_val_score(m, X, y, cv=tscv, scoring="neg_mean_absolute_error", n_jobs=1)
@@ -73,7 +75,7 @@ def main():
     for k, v in study.best_params.items():
         print(f"  {k}: {round(v,5) if isinstance(v,float) else v}")
 
-    best = XGBRegressor(**study.best_params, objective="reg:squarederror",
+    best = XGBRegressor(**study.best_params, objective="reg:pseudohubererror",
                         tree_method="hist", random_state=SEED, n_jobs=-1)
     best.fit(Xtrva, ytrva)
     pred = best.predict(Xte)

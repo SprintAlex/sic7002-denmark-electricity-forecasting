@@ -91,6 +91,18 @@ TimeSeriesSplit). Chaque ligne ajoute un levier au précédent :
   spot → fuite). C'est ce qui sépare un MAE ~23 **honnête** d'un MAE ~1.4 trompeur (repo de référence,
   qui prédit le présent avec le présent).
 
+**Pour pousser plus loin — 3 leviers de plus testés, aucun ne bat 23.26** (le plateau est réel) :
+
+| Levier | MAE | Pourquoi ça ne passe pas |
+|---|---|---|
+| Lags prix zones voisines (DE/SE/NO) | 23.00 | gain MAE minuscule **mais DirAcc ↓** ; le couplage utile est *contemporain* (= même enchère que DK → fuite), donc les lags sont **redondants avec `lag24`** |
+| Pondération récence (`sample_weight`) | 23.31 | downweighter 2022-2023 perd de l'info ; le régime récent n'est pas plus représentatif du test |
+| Re-tune Optuna + tuning de `huber_slope` | 24.18 | l'optimum du **CV ≠ optimum du test** (shift S1→S2) → les params re-tunés généralisent moins bien |
+
+→ **Le plafond ~23.3 vient de la difficulté du problème et du *distribution shift* 2024, pas d'un
+sous-tuning.** Conclusion défendable : on a épuisé les leviers honnêtes raisonnables. (Scripts :
+`xgb_neighbor_exog.py`, `tune_optuna.py` avec `huber_slope`.)
+
 ## 7. Prévision probabiliste du déséquilibre
 
 Régression quantile (P10/P50/P90) sur le prix d'imbalance : P50 MAE 41.9, **couverture [P10,P90]
